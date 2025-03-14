@@ -37,9 +37,21 @@ services:
       APP_KEYS: ${APP_KEYS}
       JWT_SECRET: ${JWT_SECRET}
     volumes:
+      - ./config:/opt/app/config
+      - ./src:/opt/app/src
+      - ./package.json:/opt/package.json
+      - ./package-lock.json:/opt/package-lock.json
+      - ./.env:/opt/app/.env
+      - ./public/uploads:/opt/app/public/uploads
       - strapi_uploads:/app/public/uploads
     networks:
       - citywayne_network
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
 
   # Next.js Frontend
   frontend:
@@ -56,6 +68,12 @@ services:
       NEXT_PUBLIC_SITE_URL: https://citywayne.com
     networks:
       - citywayne_network
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
 
   # Nginx Web Server
   nginx:

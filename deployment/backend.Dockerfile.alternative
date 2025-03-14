@@ -28,8 +28,8 @@ ENV APP_KEYS=${APP_KEYS}
 ENV JWT_SECRET=${JWT_SECRET}
 ENV NODE_OPTIONS="--max-old-space-size=8192"
 
-# Build the Strapi application with increased memory allocation
-RUN NODE_OPTIONS="--max-old-space-size=8192" npm run build 
+# Build the Strapi application with increased memory allocation directly
+RUN NODE_OPTIONS="--max-old-space-size=8192" npm run build
 
 # Production image, copy all the files and run the app
 FROM base AS runner

@@ -15,7 +15,24 @@ function show_help {
   echo "  -s, --ssl        Setup SSL certificates"
   echo "  -b, --build      Build and start all services"
   echo "  -a, --all        Complete setup (env, ssl, build)"
+  echo "  --build-backend  Build only the backend with increased memory"
+  echo "  --build-frontend Build only the frontend with increased memory"
   echo ""
+}
+
+# Check if Docker is running
+function check_docker {
+  echo "Checking if Docker is running..."
+  if ! docker info > /dev/null 2>&1; then
+    echo "Error: Docker is not running!"
+    echo ""
+    echo "Please start Docker and try again:"
+    echo "- On macOS: Start Docker Desktop from your Applications folder"
+    echo "- On Linux: Run 'sudo systemctl start docker'"
+    echo ""
+    exit 1
+  fi
+  echo "Docker is running."
 }
 
 # Generate environment variables
@@ -29,24 +46,66 @@ function generate_env {
 function setup_ssl {
   echo "Setting up SSL certificates..."
   
-  read -p "Do you want to generate staging certificates? (y/n): " staging
-  if [[ $staging =~ ^[Yy]$ ]]; then
-    ./setup-ssl.sh --staging
-  else
-    read -p "Do you want to generate production certificates? (y/n): " production
-    if [[ $production =~ ^[Yy]$ ]]; then
-      ./setup-ssl.sh --production
-    else
+  echo "SSL certificate options:"
+  echo "1) Self-signed certificates (for local development)"
+  echo "2) Let's Encrypt staging certificates (for testing)"
+  echo "3) Let's Encrypt production certificates (for production)"
+  echo "4) Skip SSL certificate generation"
+  
+  read -p "Select an option (1-4): " ssl_option
+  
+  case $ssl_option in
+    1)
+      echo "Generating self-signed certificates..."
+      ./setup-ssl.sh --self-signed
+      ;;
+    2)
+      echo "Generating Let's Encrypt staging certificates..."
+      read -p "Do you want to use local directories (no sudo required)? (y/n): " local_dirs
+      if [[ $local_dirs =~ ^[Yy]$ ]]; then
+        ./setup-ssl.sh --local --staging
+      else
+        ./setup-ssl.sh --staging
+      fi
+      ;;
+    3)
+      echo "Generating Let's Encrypt production certificates..."
+      read -p "Do you want to use local directories (no sudo required)? (y/n): " local_dirs
+      if [[ $local_dirs =~ ^[Yy]$ ]]; then
+        ./setup-ssl.sh --local --production
+      else
+        ./setup-ssl.sh --production
+      fi
+      ;;
+    4)
       echo "Skipping SSL certificate generation."
-    fi
-  fi
+      ;;
+    *)
+      echo "Invalid option. Skipping SSL certificate generation."
+      ;;
+  esac
 }
 
 # Build and start all services
 function build_services {
   echo "Building and starting all services..."
+  check_docker
   docker-compose up -d --build
   echo "All services built and started successfully!"
+}
+
+# Build backend with increased memory
+function build_backend {
+  echo "Building backend with increased memory..."
+  ./build-backend.sh
+  echo "Backend built successfully!"
+}
+
+# Build frontend with increased memory
+function build_frontend {
+  echo "Building frontend with increased memory..."
+  ./build-frontend.sh
+  echo "Frontend built successfully!"
 }
 
 # Complete setup
@@ -90,6 +149,14 @@ while [ $# -gt 0 ]; do
       ;;
     -a|--all)
       complete_setup
+      exit 0
+      ;;
+    --build-backend)
+      build_backend
+      exit 0
+      ;;
+    --build-frontend)
+      build_frontend
       exit 0
       ;;
     *)
